@@ -130,3 +130,84 @@ end
 
 % Initialize the GUI
 MRI_GUI;
+
+function [si_region1, si_region2, contrast] = analyzeSignalIntensityAndContrast(image, region1, region2)
+    % Calculate mean Signal Intensity (SI) for two regions
+    si_region1 = mean(image(region1(1):region1(2), region1(3):region1(4)), 'all');
+    si_region2 = mean(image(region2(1):region2(2), region2(3):region2(4)), 'all');
+    
+    % Calculate Contrast (difference in SI between regions)
+    contrast = abs(si_region1 - si_region2);
+    
+    % Display results
+    fprintf('Signal Intensity of Region 1: %.2f\n', si_region1);
+    fprintf('Signal Intensity of Region 2: %.2f\n', si_region2);
+    fprintf('Contrast: %.2f\n', contrast);
+end
+
+% Define regions for analysis
+region1 = [50, 100, 50, 100];  % Region 1 (start_row, end_row, start_col, end_col)
+region2 = [150, 200, 150, 200]; % Region 2
+
+% Analyze SI and Contrast
+[si1, si2, contrast] = analyzeSignalIntensityAndContrast(reconstructed_image, region1, region2);
+
+function plotSignalIntensityProfile(phantom, reconstructed_image, direction, position)
+    % Extract profiles along specified direction and position
+    if strcmp(direction, 'row')
+        profile_phantom = phantom(position, :);
+        profile_reconstructed = reconstructed_image(position, :);
+        x = 1:size(phantom, 2); % Horizontal axis for row profile
+        xlabel_text = 'Position (Column)';
+    elseif strcmp(direction, 'column')
+        profile_phantom = phantom(:, position);
+        profile_reconstructed = reconstructed_image(:, position);
+        x = 1:size(phantom, 1); % Vertical axis for column profile
+        xlabel_text = 'Position (Row)';
+    else
+        error('Direction must be "row" or "column".');
+    end
+
+    % Plot profiles
+    figure;
+    plot(x, profile_phantom, 'b-', 'DisplayName', 'Phantom Profile');
+    hold on;
+    plot(x, profile_reconstructed, 'r--', 'DisplayName', 'Reconstructed Profile');
+    hold off;
+    
+    title('Signal Intensity Profile Comparison');
+    xlabel(xlabel_text);
+    ylabel('Signal Intensity');
+    legend('show');
+end
+
+% Generate Signal Intensity Profiles along Row 80
+plotSignalIntensityProfile(phantom_image, reconstructed_image, 'row', 80);
+
+% Button to analyze SI and Contrast
+uicontrol('Style', 'pushbutton', 'Position', [20 320 100 30], 'String', 'Analyze Contrast', 'Callback', @(~,~) analyzeContrastCallback);
+
+% Input for profile direction
+uicontrol('Style', 'text', 'Position', [20 290 100 20], 'String', 'Profile Direction:');
+profile_direction_input = uicontrol('Style', 'popupmenu', 'Position', [130 290 100 20], 'String', {'Row', 'Column'});
+
+% Button to generate Signal Intensity Profile
+uicontrol('Style', 'pushbutton', 'Position', [20 250 100 30], 'String', 'Plot SI Profile', 'Callback', @(~,~) plotSIProfileCallback);
+
+function analyzeContrastCallback
+    % Define regions for contrast analysis (can be set via input fields)
+    region1 = [50, 100, 50, 100];
+    region2 = [150, 200, 150, 200];
+    
+    % Perform analysis
+    [si1, si2, contrast] = analyzeSignalIntensityAndContrast(reconstructed_image, region1, region2);
+end
+
+function plotSIProfileCallback
+    % Get direction and position for profile analysis
+    direction = profile_direction_input.String{profile_direction_input.Value};
+    position = str2double(get(profile_position_input, 'String'));
+    
+    % Plot SI Profile
+    plotSignalIntensityProfile(phantom_image, reconstructed_image, lower(direction), position);
+end
